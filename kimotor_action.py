@@ -73,8 +73,6 @@ class KiMotorDialog ( kimotor_gui.KiMotorGUI ):
 
     # terminal footprint dict
     term_tht_db = {
-        "1x2 smd"   : "SolderWirePad_1x01_SMD_1x2mm",
-        "5x10 smd"   : "SolderWirePad_1x01_SMD_5x10mm",
         "0.1"   : "SolderWire-0.1sqmm_1x01_D0.4mm_OD1mm",
         "0.15"  : "SolderWire-0.15sqmm_1x01_D0.5mm_OD1.5mm",
         "0.25"  : "SolderWire-0.25sqmm_1x01_D0.65mm_OD1.7mm",
@@ -202,7 +200,7 @@ class KiMotorDialog ( kimotor_gui.KiMotorGUI ):
 
         # TODO: place terminals based on their size
         #self.rtrm = int(self.m_ctrlDterm.GetValue()/2 * self.SCALE)
-        self.r_term = (self.r_coil_out + (self.r_coil_out + self.w_mnt)) / 2
+        self.r_term = (self.r_coil_out + self.r_out) / 2
 
         
         self.mhs = self.m_cbMountSize.GetStringSelection()
@@ -329,6 +327,7 @@ class KiMotorDialog ( kimotor_gui.KiMotorGUI ):
                 self.r_term,
                 self.n_term,
                 self.r_coil_in,
+                self.r_coil_out,
                 coils,
                 trm_lib, trm_fp)
 
@@ -355,7 +354,7 @@ class KiMotorDialog ( kimotor_gui.KiMotorGUI ):
         # draw silkscreen
         self.do_silkscreen(
             self.r_coil_in,
-            self.r_coil_out+self.trk_w, 
+            self.r_coil_out+self.trk_w,
             self.n_slots)
 
         # update board
@@ -681,7 +680,7 @@ class KiMotorDialog ( kimotor_gui.KiMotorGUI ):
         """
 
         # rings spaced from coils
-        r_in -= 1*dr
+        r_in -= 2*dr
 
         # slot angular width
         th0 = 2*math.pi/n_slot
@@ -877,7 +876,7 @@ class KiMotorDialog ( kimotor_gui.KiMotorGUI ):
                     j.SetEnd( cnx_str[phase] )
                     self.board.Add(j)
 
-    def do_terminals(self, r_term, n_term, r_coil_in, coils, lib='',fp=''):
+    def do_terminals(self, r_term, n_term, r_coil_in, r_coil_out, coils, lib='',fp=''):
         """ Create the motor terminals, and the tracks that connect the terminals to the coils
 
         Args:
@@ -900,6 +899,11 @@ class KiMotorDialog ( kimotor_gui.KiMotorGUI ):
             [math.sin(thr), math.cos(thr)],
         ])
 
+        m = pcbnew.FootprintLoad(lib, fp)
+        padWidth = m.GetFpPadsLocalBbox().GetWidth()
+        offset = r_term - r_coil_out - padWidth / 2 - 2.5
+        if (offset < 0):
+            r_term = r_term - offset
         for i in range(n_term):
 
             # radial to cartesian coords of terminal, aux corner, coil start 
@@ -907,10 +911,9 @@ class KiMotorDialog ( kimotor_gui.KiMotorGUI ):
 
             ax = r_coil_in*math.cos(th)
             ay = r_coil_in*math.sin(th)
-            tp = np.matmul(Rcw, np.array([ax,ay]))  
-
+            tp = np.matmul(Rcw, np.array([ax,ay]))
             xy_t = self.fpoint( 
-                int(r_term*math.cos(th)), 
+                int(r_term*math.cos(th)),
                 int(r_term*math.sin(th)))
             xy_a = self.fpoint( int(ax), int(ay) )
             xy_c = coils[i][0][0]
@@ -925,9 +928,9 @@ class KiMotorDialog ( kimotor_gui.KiMotorGUI ):
                 m.Rotate(xy_t, self.eda_angle(-th))
                 for p in m.Pads():
                     p.SetNet(net_coil)
-                
+
                 # REF
-                dth = 0.05 #rad
+                dth = 0.15 #rad
                 m.Reference().SetPosition( 
                     self.fpoint( 
                         int(r_term*math.cos(th+dth)), 
@@ -1202,8 +1205,9 @@ class KiMotorDialog ( kimotor_gui.KiMotorGUI ):
         # pcb label
         pcb_txt = pcbnew.PCB_TEXT(self.board)
         pcb_txt.SetText(
-            datetime.today().strftime('%Y%m%d') + 
-            "_ly" + str(self.n_layers) +
+            datetime.today().strftime('%Y%m%d') +
+            "_sz" + str(int(math.ceil(self.r_out * 2)) // 1_000_000) +
+            # "_ly" + str(self.n_layers) +
             "_s" + str(self.n_slots) +
             "_w" + str(self.n_loops)
         )
