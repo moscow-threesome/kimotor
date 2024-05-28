@@ -65,14 +65,16 @@ class KiMotorDialog ( kimotor_gui.KiMotorGUI ):
 
     # fab capabilities (min)
     fc_jlcpcb_12 = {
-        "track_width":  0.127, # (5mil)
-        "track_space":  0.127, # (5mil)
-        "via_hole":     0.15,
-        "via_diameter": 0.25,
+        "track_width":  0.16, # (5mil)
+        "track_space":  0.16, # (5mil)
+        "via_hole":     0.3,
+        "via_diameter": 0.5,
     } 
 
     # terminal footprint dict
     term_tht_db = {
+        "1x2 smd"   : "SolderWirePad_1x01_SMD_1x2mm",
+        "5x10 smd"   : "SolderWirePad_1x01_SMD_5x10mm",
         "0.1"   : "SolderWire-0.1sqmm_1x01_D0.4mm_OD1mm",
         "0.15"  : "SolderWire-0.15sqmm_1x01_D0.5mm_OD1.5mm",
         "0.25"  : "SolderWire-0.25sqmm_1x01_D0.65mm_OD1.7mm",
@@ -81,15 +83,16 @@ class KiMotorDialog ( kimotor_gui.KiMotorGUI ):
         "1.0"   : "SolderWire-1sqmm_1x01_D1.4mm_OD2.7mm",
         "1.5"   : "SolderWire-1.5sqmm_1x01_D1.7mm_OD3.9mm",
         "2.0"   : "SolderWire-2sqmm_1x01_D2mm_OD3.9mm",
-        "2.5"   : "SolderWire-2.5sqmm_1x01_D2.4mm_OD3.6mm"
+        "2.5"   : "SolderWire-2.5sqmm_1x01_D2.4mm_OD3.6mm",
+ 
     }
     term_smd_db = {
-        "1"     : "TestPoint_Pad_1.0x1.0mm",
+        "1.0"     : "TestPoint_Pad_1.0x1.0mm",
         "1.5"   : "TestPoint_Pad_1.5x1.5mm",
-        "2"     : "TestPoint_Pad_2.0x2.0mm",
+        "2.0"     : "TestPoint_Pad_2.0x2.0mm",
         "2.5"   : "TestPoint_Pad_2.5x2.5mm",
-        "3"     : "TestPoint_Pad_3.0x3.0mm",
-        "4"     : "TestPoint_Pad_4.0x4.0mm",
+        "3.0"     : "TestPoint_Pad_3.0x3.0mm",
+        "4.0"     : "TestPoint_Pad_4.0x4.0mm",
     }
     term_db = {
         "THT"   : term_tht_db,
@@ -320,9 +323,8 @@ class KiMotorDialog ( kimotor_gui.KiMotorGUI ):
         
         # terminals
         if self.trmtype != "None":
-            trm_lib = self.fp_path + 'Connector_Wire.pretty' if self.trmtype=='THT' else 'TestPoint.pretty'
+            trm_lib = self.fp_path + ('Connector_Wire.pretty' if self.trmtype =='THT' else 'TestPoint.pretty')
             trm_fp = self.term_db.get(self.trmtype).get(self.m_termSize.GetStringSelection())
-
             self.do_terminals(
                 self.r_term,
                 self.n_term,
@@ -679,7 +681,7 @@ class KiMotorDialog ( kimotor_gui.KiMotorGUI ):
         """
 
         # rings spaced from coils
-        r_in -= 2*dr
+        r_in -= 1*dr
 
         # slot angular width
         th0 = 2*math.pi/n_slot
@@ -1589,8 +1591,8 @@ class KiMotorDialog ( kimotor_gui.KiMotorGUI ):
             keys = self.term_db.get(pads).keys()
             for i,k in enumerate(keys):
                 self.m_termSize.SetString(i,k)
-            while len(keys) < self.m_termSize.GetCount():
-                self.m_termSize.Delete( self.m_termSize.GetCount()-1 )
+            # while len(keys) < self.m_termSize.GetCount():
+            #     self.m_termSize.Delete( self.m_termSize.GetCount()-1 )
 
             self.m_termSize.SetValue( 
                 self.m_termSize.GetString(
